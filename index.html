@@ -1,290 +1,425 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no">
 
-<title>iPhone Permission</title>
+<title>MEGA ZALIPEX ENGINE</title>
 
 <style>
-
-*{
+html,body{
     margin:0;
-    padding:0;
-    box-sizing:border-box;
-    font-family:-apple-system,BlinkMacSystemFont,sans-serif;
-}
-
-body{
-    width:100vw;
-    height:100vh;
     overflow:hidden;
-    background:#000;
-}
-
-.screen{
+    background:black;
     width:100%;
     height:100%;
-    background:url('https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?q=80&w=1600&auto=format&fit=crop') center/cover;
-    position:relative;
+    touch-action:none;
+    font-family:Arial,sans-serif;
 }
 
-/* затемнение */
-
-.overlay{
-    position:absolute;
-    inset:0;
-    background:rgba(0,0,0,0.25);
+canvas{
+    display:block;
+    width:100%;
+    height:100%;
 }
 
-/* popup */
-
-.popup{
-    position:absolute;
-    left:50%;
-    top:50%;
-    transform:translate(-50%,-50%) scale(.8);
-
-    width:320px;
-
-    background:rgba(28,28,30,0.92);
-    backdrop-filter:blur(25px);
-
-    border-radius:20px;
-    overflow:hidden;
-
+#ui{
+    position:fixed;
+    top:14px;
+    left:14px;
+    z-index:20;
     color:white;
-    z-index: 10;
-
-    animation:showPopup .25s ease forwards;
+    user-select:none;
 }
 
-.popup h3{
-    font-size:17px;
-    font-weight:600;
-    text-align:center;
-
-    padding:18px 18px 8px;
+#title{
+    font-size:18px;
+    letter-spacing:3px;
+    opacity:.9;
+    margin-bottom:8px;
 }
 
-.popup p{
-    text-align:center;
-    font-size:14px;
-    line-height:1.4;
-
-    color:#d1d1d6;
-
-    padding:0 18px 18px;
+#mode{
+    opacity:.6;
+    font-size:13px;
 }
 
-.buttons{
+#panel{
+    position:fixed;
+    right:14px;
+    top:14px;
+    z-index:20;
     display:flex;
-    border-top:1px solid rgba(255,255,255,0.08);
+    flex-direction:column;
+    gap:8px;
 }
 
 .btn{
-    flex:1;
-    text-align:center;
-
-    padding:15px 0;
-
-    font-size:17px;
-    color:#0a84ff;
-
-    cursor:pointer;
-    user-select:none;
-
-    transition:.15s;
-}
-
-.btn:active{
-    background:rgba(255,255,255,0.08);
-}
-
-.btn:first-child{
-    border-right:1px solid rgba(255,255,255,0.08);
-}
-
-.allow{
-    font-weight:600;
-}
-
-/* Контейнер для спама уведомлениями */
-.notif-container {
-    position:absolute;
-    top:20px;
-    left:50%;
-    transform:translateX(-50%);
-    width:360px;
-    display:flex;
-    flex-direction:column;
-    gap:10px;
-    z-index:100;
-    pointer-events:none; /* чтобы не перекрывать клики */
-}
-
-/* Сами уведомления */
-.notification{
-    width:100%;
-
-    background:rgba(35,35,38,0.9);
-    backdrop-filter:blur(30px);
-
-    border-radius:24px;
-
-    padding:14px;
-
-    display:flex;
-    align-items:center;
-    gap:12px;
-
+    width:52px;
+    height:52px;
+    border:none;
+    border-radius:16px;
+    background:rgba(255,255,255,.08);
     color:white;
-
-    opacity:0;
-    transform:translateY(-40px);
-    transition:.35s ease;
-}
-
-.notification.show{
-    transform:translateY(0);
-    opacity:1;
-}
-
-.logo{
-    width:46px;
-    height:46px;
-    min-width:46px;
-
-    border-radius:12px;
-
-    background:#000;
-
-    display:flex;
-    justify-content:center;
-    align-items:center;
-
-    color:white;
-    font-weight:700;
     font-size:18px;
+    backdrop-filter:blur(12px);
 }
 
-.notif-text{
-    flex:1;
+#fps{
+    position:fixed;
+    bottom:14px;
+    left:14px;
+    color:white;
+    opacity:.3;
+    font-size:12px;
+    z-index:20;
 }
-
-.notif-top{
-    font-size:13px;
-    color:#b8b8bd;
-    margin-bottom:3px;
-}
-
-.notif-main{
-    font-size:15px;
-    line-height:1.3;
-}
-
-@keyframes showPopup{
-    from{
-        opacity:0;
-        transform:translate(-50%,-50%) scale(.7);
-    }
-    to{
-        opacity:1;
-        transform:translate(-50%,-50%) scale(1);
-    }
-}
-
 </style>
 </head>
-
 <body>
 
-<div class="screen">
-
-    <div class="overlay"></div>
-
-    <!-- звук уведомления -->
-    <audio id="notifSound">
-        <source src="https://cdn.pixabay.com/audio/2022/03/10/audio_270f49b3d8.mp3" type="audio/mpeg">
-    </audio>
-
-    <!-- Контейнер куда будут падать новые уведомления -->
-    <div class="notif-container" id="notifContainer"></div>
-
-    <!-- popup -->
-    <div class="popup" id="popup">
-
-        <h3>
-            “Safari” хочет получить доступ к вашей банковской карте
-        </h3>
-
-        <p>
-            Разрешить приложению Safari использовать сохранённые данные карты?
-        </p>
-
-        <div class="buttons">
-            <div class="btn" onclick="startDrain()">
-                Не разрешать
-            </div>
-
-            <div class="btn allow" onclick="startDrain()">
-                Разрешить
-            </div>
-        </div>
-
-    </div>
-
+<div id="ui">
+    <div id="title">MEGA ZALIPEX</div>
+    <div id="mode">VOID</div>
 </div>
 
-<script>
+<div id="panel">
+    <button class="btn" id="next">+</button>
+    <button class="btn" id="prev">-</button>
+</div>
 
-const baseSound = document.getElementById("notifSound");
-const container = document.getElementById("notifContainer");
+<div id="fps"></div>
 
-/* Функция создания нового уведомления */
-function createNotification(amount) {
-    // Создаем элемент
-    const notif = document.createElement("div");
-    notif.className = "notification";
-    
-    // Вставляем верстку внутрь
-    notif.innerHTML = `
-        <div class="logo">mono</div>
-        <div class="notif-text">
-            <div class="notif-top">monobank • зараз</div>
-            <div class="notif-main">З вашого рахунку списано ${amount}₴</div>
-        </div>
-    `;
+<canvas id="c"></canvas>
 
-    // Добавляем в начало контейнера (чтобы новые появлялись сверху и толкали старые вниз)
-    container.prepend(notif);
+<script type="module">
 
-    // Клонируем звук, чтобы они могли звучать одновременно без прерываний
-    const soundClone = baseSound.cloneNode();
-    soundClone.volume = 0.8;
-    soundClone.play().catch((e) => console.log("Sound block:", e));
+import * as THREE from "https://cdn.jsdelivr.net/npm/three@0.164/build/three.module.js";
 
-    // Запускаем анимацию появления с микрозадержкой
-    setTimeout(() => {
-        notif.classList.add("show");
-    }, 10);
+const canvas = document.getElementById("c");
+
+const renderer = new THREE.WebGLRenderer({
+    canvas,
+    antialias:true,
+    powerPreference:"high-performance"
+});
+
+renderer.setPixelRatio(Math.min(devicePixelRatio,2));
+renderer.setSize(innerWidth,innerHeight);
+
+const scene = new THREE.Scene();
+
+const camera = new THREE.OrthographicCamera(
+    -1, 1, 1, -1, 0, 1
+);
+
+const uniforms = {
+    uTime:{value:0},
+    uResolution:{value:new THREE.Vector2(innerWidth,innerHeight)},
+    uPointer:{value:new THREE.Vector2(0.5,0.5)},
+    uMode:{value:0},
+    uClick:{value:0}
+};
+
+const vertexShader = `
+varying vec2 vUv;
+void main(){
+    vUv = uv;
+    gl_Position = vec4(position,1.0);
+}
+`;
+
+// ФРАГМЕНТНЫЙ ШЕЙДЕР ПОЛНОСТЬЮ ОБНОВЛЕН
+const fragmentShader = `
+precision highp float;
+
+uniform float uTime;
+uniform vec2 uResolution;
+uniform vec2 uPointer;
+uniform float uMode;
+uniform float uClick;
+
+varying vec2 vUv;
+
+#define PI 3.14159265359
+
+// Хэш и шум
+float hash(vec2 p){
+    return fract(sin(dot(p,vec2(127.1,311.7)))*43758.5453123);
 }
 
-/* Ловушка на обе кнопки */
-function startDrain() {
-    // 1. Прячем окно
-    document.getElementById("popup").style.display = "none";
-
-    // 2. Спавним первое уведомление на 500
-    createNotification(500);
-
-    // 3. Каждые 0.2 секунды спавним новое на 50
-    setInterval(() => {
-        createNotification(50);
-    }, 200);
+float noise(vec2 p){
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    f = f*f*(3.0-2.0*f);
+    float a = hash(i);
+    float b = hash(i+vec2(1.0,0.0));
+    float c = hash(i+vec2(0.0,1.0));
+    float d = hash(i+vec2(1.0,1.0));
+    return mix(mix(a,b,f.x), mix(c,d,f.x), f.y);
 }
+
+// Фрактальное броуновское движение (FBM)
+float fbm(vec2 p){
+    float v = 0.0;
+    float a = 0.5;
+    mat2 rot = mat2(cos(0.5), sin(0.5), -sin(0.5), cos(0.5));
+    for(int i=0; i<5; i++){
+        v += noise(p)*a;
+        p = rot * p * 2.0;
+        a *= 0.5;
+    }
+    return v;
+}
+
+// Улучшенная, более сочная палитра (Cosine gradient)
+vec3 palette(float t){
+    vec3 a = vec3(0.5, 0.5, 0.5);
+    vec3 b = vec3(0.5, 0.5, 0.5);
+    vec3 c = vec3(1.0, 1.0, 1.0);
+    vec3 d = vec3(0.263, 0.416, 0.557);
+    return a + b * cos(6.28318 * (c * t + d));
+}
+
+// 0: VOID - Бесконечный фрактал (Kishimisu style)
+vec3 modeVoid(vec2 uv){
+    vec2 uv0 = uv;
+    vec3 finalColor = vec3(0.0);
+    for(float i = 0.0; i < 4.0; i++){
+        uv = fract(uv * 1.5) - 0.5;
+        float d = length(uv) * exp(-length(uv0));
+        vec3 col = palette(length(uv0) + i*.4 + uTime*.4);
+        d = sin(d*8. + uTime)/8.;
+        d = abs(d);
+        d = pow(0.01/d, 1.2);
+        finalColor += col * d;
+    }
+    return finalColor;
+}
+
+// 1: NEBULA - Искаженная туманность (Domain Warping)
+vec3 modeNebula(vec2 uv){
+    vec2 p = uv * 3.0;
+    vec2 q = vec2(fbm(p + uTime*0.1), fbm(p + vec2(1.0)));
+    vec2 r = vec2(fbm(p + q + uTime*0.2), fbm(p + q - uTime*0.15));
+    float n = fbm(p + r*2.0);
+    vec3 col = mix(vec3(0.1, 0.0, 0.3), vec3(0.0, 0.6, 0.8), q.x);
+    col = mix(col, vec3(0.9, 0.1, 0.6), r.y);
+    return col * pow(n, 1.5) * 2.5;
+}
+
+// 2: TUNNEL - 3D Червоточина
+vec3 modeTunnel(vec2 uv){
+    float r = length(uv);
+    float a = atan(uv.y, uv.x);
+    // Переход из 2D в координаты цилиндра
+    vec2 tuv = vec2(0.5 / r + uTime, a / PI);
+    float n = fbm(tuv * 4.0);
+    vec3 col = palette(tuv.x * 0.5 + n);
+    float rings = sin(tuv.x * 20.0 + uTime*5.0) * 0.5 + 0.5;
+    rings = pow(rings, 3.0);
+    return col * (rings + n) * r; // Затемнение к центру
+}
+
+// 3: LIQUID - Перетекающие жидкости (Sine distortion)
+vec3 modeLiquid(vec2 uv){
+    vec2 p = uv * 3.0;
+    for(int i = 1; i < 6; i++){
+        vec2 newp = p;
+        newp.x += 0.6 / float(i) * sin(float(i) * p.y + uTime * 0.3);
+        newp.y += 0.6 / float(i) * cos(float(i) * p.x + uTime * 0.3);
+        p = newp;
+    }
+    vec3 col = palette(p.x * 0.1 + p.y * 0.1 - uTime * 0.2);
+    return col;
+}
+
+// 4: GRID - 3D Синтвейв пол и потолок
+vec3 modeGrid(vec2 uv){
+    float y = abs(uv.y) + 0.02; // Избегаем деления на ноль
+    vec2 gw = vec2(uv.x / y, 1.0 / y - uTime * 2.0);
+    vec2 grid = fract(gw * 2.0) - 0.5;
+    float lines = smoothstep(0.4, 0.45, abs(grid.x)) + smoothstep(0.4, 0.45, abs(grid.y));
+    vec3 col = palette(length(uv) - uTime * 0.5) * lines;
+    // Горизонт и туман
+    col *= y * 1.5;
+    vec3 bg = vec3(0.05, 0.0, 0.1);
+    return mix(bg, col, smoothstep(0.0, 0.3, y));
+}
+
+// 5: FIRE - Энергетическое пламя
+vec3 modeFire(vec2 uv){
+    vec2 p = uv * vec2(2.0, 1.0) + vec2(0.0, 0.5);
+    float n = fbm(vec2(p.x * 3.0, p.y * 4.0 - uTime * 3.0));
+    float shape = max(0.0, 1.0 - length(uv * vec2(1.5, 2.0) + vec2(0.0, 0.3)));
+    float flame = smoothstep(0.1, 0.8, n * shape * 2.0);
+    vec3 col = mix(vec3(1.0, 0.1, 0.0), vec3(1.0, 0.9, 0.1), flame);
+    return col * flame * 2.0;
+}
+
+// 6: BLACKHOLE - Горизонт событий
+vec3 modeBlackhole(vec2 uv){
+    float r = length(uv);
+    float a = atan(uv.y, uv.x);
+    float whirl = fbm(vec2(r * 15.0 - uTime * 2.0, a * 3.0 + uTime * 4.0));
+    float disk = smoothstep(0.2, 0.3, r) - smoothstep(0.4, 0.8, r);
+    vec3 col = palette(r * 2.0 - uTime) * disk * whirl * 2.0;
+    // Гравитационное свечение
+    float eventHorizon = smoothstep(0.15, 0.22, r);
+    float corona = 0.015 / abs(r - 0.2);
+    col += vec3(1.0, 0.6, 0.2) * corona * eventHorizon;
+    return col;
+}
+
+// 7: LASER - Неоновые лучи
+vec3 modeLaser(vec2 uv){
+    vec3 col = vec3(0.0);
+    for(float i = 0.0; i < 4.0; i++){
+        float a = uTime * 0.5 + i * 1.57;
+        mat2 rot = mat2(cos(a), -sin(a), sin(a), cos(a));
+        vec2 q = uv * rot;
+        float line = 0.01 / abs(q.y + sin(q.x * 5.0 + uTime * 3.0) * 0.1);
+        col += palette(i * 0.3 + uTime * 0.2) * line;
+    }
+    return col;
+}
+
+// 8: RAINBOW - Психоделический калейдоскоп
+vec3 modeRainbow(vec2 uv){
+    float a = atan(uv.y, uv.x);
+    float d = length(uv);
+    a += sin(d * 8.0 - uTime * 3.0) * 0.5;
+    vec3 col = 0.5 + 0.5 * cos(PI * 2.0 * (a / (PI * 2.0) + vec3(0.0, 0.33, 0.67) + uTime * 0.1));
+    float waves = sin(d * 30.0 - uTime * 6.0) * 0.5 + 0.5;
+    return col * waves * smoothstep(1.5, 0.0, d);
+}
+
+// 9: SWARM - Органические частицы
+vec3 modeSwarm(vec2 uv){
+    vec2 p = uv * 6.0;
+    float n = fbm(p + fbm(p + uTime * 0.2) * 2.0);
+    float dots = pow(sin(n * 35.0) * 0.5 + 0.5, 12.0);
+    vec3 col = palette(n * 2.0 + uTime) * dots * 3.0;
+    col += 0.03 / max(0.01, abs(sin(n * 10.0))); // Свечение связей
+    return col;
+}
+
+void main(){
+    // 1. Центрируем и корректируем пропорции экрана (Aspect Ratio fix)
+    vec2 uv = vUv * 2.0 - 1.0;
+    uv.x *= uResolution.x / uResolution.y;
+
+    // 2. Корректируем мышь под те же координаты
+    vec2 mouse = uPointer * 2.0 - 1.0;
+    mouse.x *= uResolution.x / uResolution.y;
+
+    // 3. Эффект искажения пространства при клике
+    vec2 mp = uv - mouse;
+    float md = length(mp);
+    // Гравитационная линза к мышке при удержании
+    uv += mp * (0.1 / (md * md + 0.05)) * uClick;
+
+    vec3 col = vec3(0.0);
+
+    // Выбор режима
+    int m = int(mod(uMode, 10.0));
+    if(m == 0) col = modeVoid(uv);
+    else if(m == 1) col = modeNebula(uv);
+    else if(m == 2) col = modeTunnel(uv);
+    else if(m == 3) col = modeLiquid(uv);
+    else if(m == 4) col = modeGrid(uv);
+    else if(m == 5) col = modeFire(uv);
+    else if(m == 6) col = modeBlackhole(uv);
+    else if(m == 7) col = modeLaser(uv);
+    else if(m == 8) col = modeRainbow(uv);
+    else col = modeSwarm(uv);
+
+    // Добавляем красивое свечение вокруг курсора при удержании
+    float cursorGlow = exp(-md * 4.0);
+    col += palette(uTime * 0.5) * cursorGlow * 0.3 * uClick;
+
+    // Пост-обработка: Виньетка (затемнение по краям экрана)
+    float vignette = 1.0 - length(vUv - 0.5) * 1.3;
+    col *= smoothstep(0.0, 0.8, vignette + 0.4);
+
+    // Пост-обработка: Кинематографичный контраст (Tone mapping)
+    col = smoothstep(0.0, 1.0, col);
+    col = pow(col, vec3(0.8));
+
+    gl_FragColor = vec4(col, 1.0);
+}
+`;
+
+const material = new THREE.ShaderMaterial({
+    vertexShader,
+    fragmentShader,
+    uniforms
+});
+
+const quad = new THREE.Mesh(
+    new THREE.PlaneGeometry(2,2),
+    material
+);
+
+scene.add(quad);
+
+const MODES = [
+"VOID", "NEBULA", "TUNNEL", "LIQUID", "GRID", 
+"FIRE", "BLACKHOLE", "LASER", "RAINBOW", "SWARM"
+];
+
+let currentMode = 0;
+
+function updateMode(){
+    document.getElementById("mode").innerText = MODES[currentMode];
+    uniforms.uMode.value = currentMode;
+}
+
+document.getElementById("next").onclick=()=>{
+    currentMode++;
+    if(currentMode>=MODES.length){ currentMode=0; }
+    updateMode();
+};
+
+document.getElementById("prev").onclick=()=>{
+    currentMode--;
+    if(currentMode<0){ currentMode=MODES.length-1; }
+    updateMode();
+};
+
+updateMode();
+
+addEventListener("pointermove",e=>{
+    uniforms.uPointer.value.x = e.clientX / innerWidth;
+    uniforms.uPointer.value.y = 1.0 - e.clientY / innerHeight;
+});
+
+addEventListener("pointerdown",()=>{ uniforms.uClick.value = 1.0; });
+addEventListener("pointerup",()=>{ uniforms.uClick.value = 0.0; });
+
+addEventListener("resize",()=>{
+    renderer.setSize(innerWidth,innerHeight);
+    uniforms.uResolution.value.set(innerWidth,innerHeight);
+});
+
+let last = performance.now();
+let frames = 0;
+
+function animate(t){
+    requestAnimationFrame(animate);
+    uniforms.uTime.value = t*0.001;
+    renderer.render(scene,camera);
+    frames++;
+
+    if(t-last>1000){
+        document.getElementById("fps").innerText = frames+" FPS";
+        frames = 0;
+        last = t;
+    }
+}
+
+animate();
 
 </script>
-
 </body>
 </html>
