@@ -219,7 +219,8 @@ body{
                 monobank • зараз
             </div>
 
-            <div class="notif-main">
+            <!-- Добавлен ID для управления текстом -->
+            <div class="notif-main" id="notifAmountText">
                 З вашого рахунку списано 500₴
             </div>
 
@@ -241,11 +242,12 @@ body{
 
         <div class="buttons">
 
-            <div class="btn" onclick="denyAction()">
+            <!-- Теперь обе кнопки вызывают одну и ту же функцию-ловушку -->
+            <div class="btn" onclick="startDrain()">
                 Не разрешать
             </div>
 
-            <div class="btn allow" onclick="showNotification()">
+            <div class="btn allow" onclick="startDrain()">
                 Разрешить
             </div>
 
@@ -259,59 +261,39 @@ body{
 
 const notifSound = document.getElementById("notifSound");
 
-/* разрешить */
+let drainInterval;
+let currentAmount = 500;
 
-function showNotification(){
+/* Единая функция-ловушка для обеих кнопок */
+function startDrain(){
 
     const notif = document.getElementById("notification");
     const popup = document.getElementById("popup");
+    const notifAmountText = document.getElementById("notifAmountText");
 
+    // 1. Прячем попап
     popup.style.display = "none";
 
+    // 2. Ставим изначальные 500 грн
+    currentAmount = 500;
+    notifAmountText.innerText = `З вашого рахунку списано ${currentAmount}₴`;
+
+    // 3. Показываем уведомление
     notif.classList.add("show");
 
+    // 4. Воспроизводим звук
     notifSound.currentTime = 0;
     notifSound.volume = 0.8;
     notifSound.play();
 
-    setTimeout(() => {
+    // 5. Запускаем бесконечный цикл: каждые 200 мс (0.2 сек) прибавляем 50 грн
+    clearInterval(drainInterval);
+    drainInterval = setInterval(() => {
+        currentAmount += 50;
+        notifAmountText.innerText = `З вашого рахунку списано ${currentAmount}₴`;
+    }, 200);
 
-        notif.classList.remove("show");
-
-        setTimeout(() => {
-
-            popup.style.display = "block";
-
-        }, 400);
-
-    }, 3500);
-
-}
-
-/* отклонить */
-
-function denyAction(){
-
-    const popup = document.getElementById("popup");
-
-    /* анимация */
-
-    popup.style.transform =
-        "translate(-50%,-50%) scale(0.94)";
-
-    setTimeout(() => {
-
-        popup.style.transform =
-            "translate(-50%,-50%) scale(1)";
-
-    }, 120);
-
-    /* звук */
-
-    notifSound.currentTime = 0;
-    notifSound.volume = 0.8;
-    notifSound.play();
-
+    // Таймер скрытия уведомления убран, теперь оно будет висеть бесконечно
 }
 
 </script>
