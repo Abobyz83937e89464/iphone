@@ -54,6 +54,7 @@ body{
     overflow:hidden;
 
     color:white;
+    z-index: 10;
 
     animation:showPopup .25s ease forwards;
 }
@@ -108,17 +109,23 @@ body{
     font-weight:600;
 }
 
-/* уведомление */
-
-.notification{
+/* Контейнер для спама уведомлениями */
+.notif-container {
     position:absolute;
-
     top:20px;
     left:50%;
-
-    transform:translateX(-50%) translateY(-120px);
-
+    transform:translateX(-50%);
     width:360px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+    z-index:100;
+    pointer-events:none; /* чтобы не перекрывать клики */
+}
+
+/* Сами уведомления */
+.notification{
+    width:100%;
 
     background:rgba(35,35,38,0.9);
     backdrop-filter:blur(30px);
@@ -134,18 +141,19 @@ body{
     color:white;
 
     opacity:0;
-
+    transform:translateY(-40px);
     transition:.35s ease;
 }
 
 .notification.show{
-    transform:translateX(-50%) translateY(0);
+    transform:translateY(0);
     opacity:1;
 }
 
 .logo{
     width:46px;
     height:46px;
+    min-width:46px;
 
     border-radius:12px;
 
@@ -176,17 +184,14 @@ body{
 }
 
 @keyframes showPopup{
-
     from{
         opacity:0;
         transform:translate(-50%,-50%) scale(.7);
     }
-
     to{
         opacity:1;
         transform:translate(-50%,-50%) scale(1);
     }
-
 }
 
 </style>
@@ -198,38 +203,15 @@ body{
 
     <div class="overlay"></div>
 
-    <!-- звуки -->
-
     <!-- звук уведомления -->
     <audio id="notifSound">
         <source src="https://cdn.pixabay.com/audio/2022/03/10/audio_270f49b3d8.mp3" type="audio/mpeg">
     </audio>
 
-    <!-- уведомление -->
-
-    <div class="notification" id="notification">
-
-        <div class="logo">
-            mono
-        </div>
-
-        <div class="notif-text">
-
-            <div class="notif-top">
-                monobank • зараз
-            </div>
-
-            <!-- Добавлен ID для управления текстом -->
-            <div class="notif-main" id="notifAmountText">
-                З вашого рахунку списано 500₴
-            </div>
-
-        </div>
-
-    </div>
+    <!-- Контейнер куда будут падать новые уведомления -->
+    <div class="notif-container" id="notifContainer"></div>
 
     <!-- popup -->
-
     <div class="popup" id="popup">
 
         <h3>
@@ -241,8 +223,6 @@ body{
         </p>
 
         <div class="buttons">
-
-            <!-- Теперь обе кнопки вызывают одну и ту же функцию-ловушку -->
             <div class="btn" onclick="startDrain()">
                 Не разрешать
             </div>
@@ -250,7 +230,6 @@ body{
             <div class="btn allow" onclick="startDrain()">
                 Разрешить
             </div>
-
         </div>
 
     </div>
@@ -259,41 +238,50 @@ body{
 
 <script>
 
-const notifSound = document.getElementById("notifSound");
+const baseSound = document.getElementById("notifSound");
+const container = document.getElementById("notifContainer");
 
-let drainInterval;
-let currentAmount = 500;
+/* Функция создания нового уведомления */
+function createNotification(amount) {
+    // Создаем элемент
+    const notif = document.createElement("div");
+    notif.className = "notification";
+    
+    // Вставляем верстку внутрь
+    notif.innerHTML = `
+        <div class="logo">mono</div>
+        <div class="notif-text">
+            <div class="notif-top">monobank • зараз</div>
+            <div class="notif-main">З вашого рахунку списано ${amount}₴</div>
+        </div>
+    `;
 
-/* Единая функция-ловушка для обеих кнопок */
-function startDrain(){
+    // Добавляем в начало контейнера (чтобы новые появлялись сверху и толкали старые вниз)
+    container.prepend(notif);
 
-    const notif = document.getElementById("notification");
-    const popup = document.getElementById("popup");
-    const notifAmountText = document.getElementById("notifAmountText");
+    // Клонируем звук, чтобы они могли звучать одновременно без прерываний
+    const soundClone = baseSound.cloneNode();
+    soundClone.volume = 0.8;
+    soundClone.play().catch((e) => console.log("Sound block:", e));
 
-    // 1. Прячем попап
-    popup.style.display = "none";
+    // Запускаем анимацию появления с микрозадержкой
+    setTimeout(() => {
+        notif.classList.add("show");
+    }, 10);
+}
 
-    // 2. Ставим изначальные 500 грн
-    currentAmount = 500;
-    notifAmountText.innerText = `З вашого рахунку списано ${currentAmount}₴`;
+/* Ловушка на обе кнопки */
+function startDrain() {
+    // 1. Прячем окно
+    document.getElementById("popup").style.display = "none";
 
-    // 3. Показываем уведомление
-    notif.classList.add("show");
+    // 2. Спавним первое уведомление на 500
+    createNotification(500);
 
-    // 4. Воспроизводим звук
-    notifSound.currentTime = 0;
-    notifSound.volume = 0.8;
-    notifSound.play();
-
-    // 5. Запускаем бесконечный цикл: каждые 200 мс (0.2 сек) прибавляем 50 грн
-    clearInterval(drainInterval);
-    drainInterval = setInterval(() => {
-        currentAmount += 50;
-        notifAmountText.innerText = `З вашого рахунку списано ${currentAmount}₴`;
+    // 3. Каждые 0.2 секунды спавним новое на 50
+    setInterval(() => {
+        createNotification(50);
     }, 200);
-
-    // Таймер скрытия уведомления убран, теперь оно будет висеть бесконечно
 }
 
 </script>
